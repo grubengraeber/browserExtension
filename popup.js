@@ -1,46 +1,68 @@
+
 // ASK FOR apiUserEmail
 // ASK FOR apiKey
-let fromTime = false;
-let toTime = false;
 const emailField = document.getElementById("clockodo-email-address");
 const apiKeyField = document.getElementById("clockodo-api-key");
 const inputButton = document.getElementById("button");
+const fromDate = document.getElementById("fromDate");
+const untilDate = document.getElementById("untilDate");
+let timeSince = "";
+let timeUntil = "";
 let apiUserEmail = "";
 let apiKey = "";
-inputButton.onclick = (clickEvent) => {
-    apiKey = apiKeyField.value;
-    apiUserEmail = emailField.value;
-    alert("Should have worked! (values: ['" + apiKey + "', '" + apiUserEmail + "'])");
-}
-chrome.action.setBadgeText({
-    text: "USER"
+
+chrome.storage.sync.get(["apiKey", "clockodoMail"], (result) => {
+    apiKey = result.apiKey ?? "";
+    apiUserEmail = result.clockodoMail ?? "";
+    emailField.value = apiUserEmail;
+    apiKeyField.value = apiKey;
+    console.info(`From chrome.storage.sync: '${result.apiKey}' + '${result.clockodoMail}'`)
 })
-// ASK FOR timeSince
-let timeSince = "";
-if (fromTime) {
-    chrome.action.setBadgeText({
-        text: "FROM"
+
+emailField.onchange = (changeEvent) => {
+    const clockodoMail = changeEvent.target.value;
+    chrome.storage.sync.set({clockodoMail}, function () {
+        console.log(clockodoMail)
     })
 }
 
-// ASK FOR timeUntil
-
-if (toTime) {
-    chrome.action.setBadgeText({
-        text: "TO"
+apiKeyField.onchange = (changeEvent) => {
+    const apiKey = changeEvent.target.value;
+    chrome.storage.sync.set({apiKey}, function () {
+        console.log(apiKey)
     })
 }
-let timeUntil = "";
 
-// Get Clockodo Api Data
 const apiBaseGetRouteClockodo = "https://my.clockodo.com/api/v2/entries";
-let clockodoApplicationName = "";
+let clockodoApplicationName = "SMATRICS";
 let headOfApiCall = {
     'X-ClockodoApiUser': apiUserEmail,
     'X-ClockodoApiKey': apiKey,
     'X-Clockodo-External-Application': clockodoApplicationName + "; " + apiUserEmail
 };
 let pathVariables = "?time_since=" + timeSince +  "&time_until=" + timeUntil;
+
+inputButton.onclick = (clickEvent) => {
+    apiKey = apiKeyField.value;
+    apiUserEmail = emailField.value;
+    timeSince = fromDate.value + "%0000:00:00"
+    timeUntil = untilDate.value + "%2400:00:00"
+    console.log(apiKey + ", " + apiUserEmail + ", " + timeSince + ", " + timeUntil)
+    alert("Should have worked! (values: ['" + apiKey + "', '" + apiUserEmail + "', '" + timeSince + "', '" + timeUntil + "'])");
+    fetch(apiBaseGetRouteClockodo + pathVariables, {
+        method: "GET",
+        headers: headOfApiCall
+    })
+    .then((response) => response.json())
+    .then((data) => console.log(data))
+}
+chrome.action.setBadgeText({
+    text: "SYNC"
+});
+
+
+// Get Clockodo Api Data
+
 
 // Display fetched data and let user modify specific names, 
     // dates, 
